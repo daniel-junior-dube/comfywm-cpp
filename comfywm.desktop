@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=ComfyWM
+Comment=A Wayland Tiling Window Manager
+Exec=comfywm
+Type=Application

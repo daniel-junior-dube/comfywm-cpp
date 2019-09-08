@@ -1,0 +1,1 @@
+{"version": "0.1", "descriptive_name": "comfywm", "subproject_dir": "subprojects", "subprojects": [{"name": "wlroots", "version": "0.7.0", "descriptive_name": "wlroots"}]}

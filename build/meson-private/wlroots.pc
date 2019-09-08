@@ -1,0 +1,11 @@
+prefix=/usr/local
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: wlroots
+Description: Wayland compositor library
+Version: 0.7.0
+Requires.private: libcap, libsystemd >= 237, wayland-server >= 1.16, wayland-client, wayland-egl, wayland-protocols >= 1.17, egl, glesv2, libdrm >= 2.4.95, gbm >= 17.1.0, libinput >= 1.9.0, xkbcommon, libudev, pixman-1
+Libs: -L${libdir} -lwlroots
+Libs.private: -lm
+Cflags: -I${includedir}
