@@ -5,7 +5,6 @@ comfywm_sources = files(
 
 pixman          = dependency('pixman-1')
 wayland_server  = dependency('wayland-server')
-wlroots         = dependency('wlroots')
 
 exe = executable(
   'comfywm',

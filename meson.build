@@ -17,14 +17,14 @@ add_global_arguments(
 
 cc = meson.get_compiler('cpp')
 
-wlroots_version = '>=0.7'
+wlroots_version = '>=0.6'
 wlroots_proj = subproject(
   'wlroots',
   default_options: [
     'rootston=false',
     'examples=false'
   ],
-  required: true,
+  required: false,
   version: wlroots_version,
 )
 
