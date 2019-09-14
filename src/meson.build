@@ -3,17 +3,18 @@ comfywm_sources = files(
   'server.cpp',
 )
 
-pixman         = dependency('pixman-1')
-wayland_server = dependency('wayland-server')
+pixman          = dependency('pixman-1')
+wayland_server  = dependency('wayland-server')
+wlroots         = dependency('wlroots')
 
 exe = executable(
   'comfywm',
-  comfywm_sources,
+  sources: comfywm_sources,
   dependencies : [
     pixman,
     wayland_server,
-    wlroots_dep
+    wlroots,
   ],
-  install : true
+  #install : true
 )
 

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cassert>
-#include "server.h"
+#include "server.hpp"
 
 int main() {
   // ?
@@ -11,8 +11,10 @@ int main() {
   auto wl_event_loop = wl_display_get_event_loop(wl_display);
   assert(wl_event_loop);
 
+  auto wlr_backend = wlr_backend_autocreate(wl_display, nullptr);
+
   // ?
-  Server server(wl_display, wl_event_loop);
+  Server server(wl_display, wl_event_loop, wlr_backend);
 
   std::cout << "Comfy Terminating" << std::endl;
   return 0;

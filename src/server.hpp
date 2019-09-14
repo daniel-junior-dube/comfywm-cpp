@@ -1,5 +1,10 @@
-#include <wayland-server.h>
+#pragma once
+
+extern "C" {
 #include <wlr/backend.h>
+}
+
+#include <wayland-server.h>
 
 class Server {
 
@@ -8,9 +13,9 @@ class Server {
 
   // ? Display event loop context
 	wl_event_loop* wayland_event_loop;
-  wlr_backend* backend;
+  wlr_backend* wlroots_backend;
 public:
-  Server(wl_display* display, wl_event_loop* event_loop);
+  Server(wl_display* display, wl_event_loop* event_loop, wlr_backend* backend);
   ~Server();
 private:
 };
