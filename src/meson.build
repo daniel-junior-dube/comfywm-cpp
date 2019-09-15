@@ -1,6 +1,7 @@
 comfywm_sources = files(
   'main.cpp',
-  'server.cpp',
+  'cmfy_server.cpp',
+  'cmfy_output.cpp',
 )
 
 pixman          = dependency('pixman-1')
@@ -14,6 +15,7 @@ exe = executable(
     wayland_server,
     wlroots,
   ],
+  override_options : ['cpp_std=c++17'],
   #install : true
 )
 
