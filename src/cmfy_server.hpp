@@ -18,6 +18,7 @@ extern "C" {
 #include <wayland-server.h>
 
 #include "cmfy_output.hpp"
+#include "cmfy_view.hpp"
 
 class CMFYServer {
 
@@ -31,13 +32,15 @@ class CMFYServer {
   wlr_xdg_shell* main_xdg_shell;
 public:
   wl_listener new_output_listener;
+  wl_listener new_xdg_surface_listener;
+  wlr_renderer* wlroots_renderer;
   wl_list outputs;
   wl_list views;
 
-  CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backend* backend, wlr_output_layout* output_layout);
+  CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backend* backend, wlr_renderer* wlroots_renderer, wlr_output_layout* output_layout);
   ~CMFYServer();
   static std::optional<CMFYServer*> TryCreate();
   void start();
-  void on_new_output(wl_listener* listener, void* data);
+  void add_view(CMFYView* view);
 private:
 };
