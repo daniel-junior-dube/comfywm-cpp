@@ -3,6 +3,13 @@
 extern "C" {
 #include <wlr/backend.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_xdg_shell.h>
+#define static
+#include <wlr/render/wlr_renderer.h>
+#include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_data_device.h>
+#undef static
 }
 
 #include <iostream>
@@ -18,15 +25,18 @@ class CMFYServer {
   wl_display* wayland_display;
 
   // ? Display event loop context
-	wl_event_loop* wayland_event_loop;
+  wl_event_loop* wayland_event_loop;
   wlr_backend* wlroots_backend;
+  wlr_output_layout* wlroots_output_layout;
+  wlr_xdg_shell* main_xdg_shell;
 public:
   wl_listener new_output_listener;
   wl_list outputs;
+  wl_list views;
 
-  CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backend* backend);
+  CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backend* backend, wlr_output_layout* output_layout);
   ~CMFYServer();
-  static std::optional<CMFYServer> TryCreate();
+  static std::optional<CMFYServer*> TryCreate();
   void start();
   void on_new_output(wl_listener* listener, void* data);
 private:

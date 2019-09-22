@@ -12,6 +12,7 @@ exe = executable(
   sources: comfywm_sources,
   dependencies : [
     pixman,
+    server_protos,
     wayland_server,
     wlroots,
   ],

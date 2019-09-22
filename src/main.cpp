@@ -20,7 +20,7 @@ int main() {
   }
 
   auto cmfy_server = cmfy_server_maybe.value();
-  cmfy_server.start();
+  cmfy_server->start();
 
   std::cout << "Comfy terminating" << std::endl;
   return 0;

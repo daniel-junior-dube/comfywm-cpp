@@ -17,6 +17,10 @@ add_global_arguments(
 
 cc = meson.get_compiler('cpp')
 
+wayland_server = dependency('wayland-server')
+wayland_client = dependency('wayland-client')
+wayland_protos = dependency('wayland-protocols', version: '>=1.14')
+
 wlroots_version = '>=0.6'
 wlroots_proj = subproject(
   'wlroots',
@@ -40,5 +44,6 @@ endif
 inc = include_directories('include')
 
 subdir('include')
+subdir('protocols')
 subdir('src')
 
