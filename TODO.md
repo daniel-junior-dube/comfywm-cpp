@@ -1,3 +1,4 @@
 
 # TODO
- - [ ] Integrate a proper logging system
+ - Integrate a proper logging system
+ - Implement proper input management (and seat)

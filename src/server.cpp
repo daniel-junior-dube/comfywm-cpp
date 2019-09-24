@@ -66,7 +66,7 @@ CMFYServer::CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backe
   std::cout << "Display socket : '" << this->socket_name << "'" << std::endl;
 
   /* Set the WAYLAND_DISPLAY environment variable to our socket. */
-	setenv("WAYLAND_DISPLAY", this->socket_name, true);
+  setenv("WAYLAND_DISPLAY", this->socket_name, true);
 
   /*
    * Creates a cursor, which is a wlroots utility for tracking the cursor
@@ -100,7 +100,7 @@ CMFYServer::~CMFYServer() {
   // TOFIX: This causes and segfault..
   //if (this->wayland_display) {
   //  wl_display_destroy_clients(this->wayland_display);
-	//  wl_display_destroy(this->wayland_display);
+  //  wl_display_destroy(this->wayland_display);
   //}
 }
 
@@ -116,6 +116,15 @@ std::optional<CMFYServer*> CMFYServer::TryCreate() {
 
   wlr_renderer* wlroots_renderer = wlr_backend_get_renderer(wlroots_backend);
   if (!wlroots_renderer) return {};
+
+  wlr_renderer_init_wl_display(wlroots_renderer, wayland_display);
+
+  /* This creates some hands-off wlroots interfaces. The compositor is
+   * necessary for clients to allocate surfaces and the data device manager
+   * handles the clipboard. Each of these wlroots interfaces has room for you
+   * to dig your fingers in and play with their behavior if you want. */
+  wlr_compositor_create(wayland_display, wlroots_renderer);
+  wlr_data_device_manager_create(wayland_display);
 
   auto wlroots_output_layout = wlr_output_layout_create();
 

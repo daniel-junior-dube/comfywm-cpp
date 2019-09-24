@@ -54,9 +54,7 @@ bool CMFYOutput::has_modes() {
 }
 
 std::optional<wlr_output_mode*> CMFYOutput::get_default_mode() {
-  if (!this->has_modes()) {
-    return {};
-  }
+  if (!this->has_modes()) return {};
   wlr_output_mode* default_output_mode = wl_container_of(
     this->wlroots_output->modes.prev,
     default_output_mode,

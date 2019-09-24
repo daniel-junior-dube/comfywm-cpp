@@ -10,22 +10,18 @@ CMFYRenderer::~CMFYRenderer() {}
 
 void CMFYRenderer::render(int width, int height, std::function<void()> callback) {
   wlr_renderer_begin(this->wlroots_renderer, width, height);
-
   if (this->should_clear) wlr_renderer_clear(this->wlroots_renderer, this->clear_color);
-
   callback();
-
-  //wlr_output_commit(output->wlroots_output);
   wlr_renderer_end(this->wlroots_renderer);
 }
 
 void CMFYRenderer::render_output(CMFYOutput output, std::function<void()> callback) {
-  // Makes the OpenGL context current.
-  if (!wlr_output_attach_render(output.wlroots_output, nullptr)) {
-    return;
-  }
+  if (!wlr_output_attach_render(output.wlroots_output, nullptr)) return;
   std::pair<int, int> resolution = output.get_effective_resolution();
-  this->render(resolution.first, resolution.second, callback);
+  this->render(resolution.first, resolution.second, [&]() {
+    callback();
+    wlr_output_commit(output.wlroots_output);
+  });
 }
 
 void CMFYRenderer::draw_surface(wlr_surface *surface, int sx, int sy, void *data) {
