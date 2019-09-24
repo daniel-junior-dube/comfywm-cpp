@@ -1,6 +1,6 @@
 #include <optional>
 #include <iostream>
-#include "cmfy_server.hpp"
+#include "server.hpp"
 
 extern "C" {
 #include <wlr/util/log.h>
@@ -15,11 +15,14 @@ int main() {
 
   auto cmfy_server_maybe = CMFYServer::TryCreate();
   if (!cmfy_server_maybe) {
-    std::cout << "Failed to create ComfyWM server" << std::endl;
+    std::cerr << "Failed to create ComfyWM server" << std::endl;
     return 1;
   }
 
   auto cmfy_server = cmfy_server_maybe.value();
+
+  // TODO: Run provided startup command if any using cmfy_server.socket_name (See tinywl.c)
+
   cmfy_server->start();
 
   std::cout << "Comfy terminating" << std::endl;

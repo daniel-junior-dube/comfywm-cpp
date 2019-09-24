@@ -26,5 +26,6 @@ public:
   int x, y;
   CMFYView(CMFYServer* server, wlr_xdg_surface* xdg_surface);
   ~CMFYView();
+  void bind_events();
 private:
 };

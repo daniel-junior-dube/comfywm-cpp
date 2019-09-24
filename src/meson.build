@@ -1,8 +1,10 @@
 comfywm_sources = files(
   'main.cpp',
-  'cmfy_server.cpp',
-  'cmfy_output.cpp',
-  'cmfy_view.cpp',
+  'server.cpp',
+  'renderer.cpp',
+  'output.cpp',
+  'view.cpp',
+  'cursor.cpp',
 )
 
 pixman          = dependency('pixman-1')
