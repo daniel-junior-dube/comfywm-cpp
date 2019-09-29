@@ -53,5 +53,9 @@ public:
   void add_view(CMFYView* view);
   void add_output(CMFYOutput* output);
   void set_cursor(CMFYCursor cursor);
+  static void on_new_input(wl_listener* listener, void* data);
+  static void on_seat_request_cursor(wl_listener* listener, void* data);
+  static void on_new_output(wl_listener* listener, void* data);
+  static void on_new_xdg_surface(struct wl_listener *listener, void *data);
 private:
 };

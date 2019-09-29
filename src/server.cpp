@@ -4,43 +4,6 @@ const char *XCURSOR_THEME_NAME = NULL;
 const uint32_t XCURSOR_THEME_BASE_SIZE = 24;
 const float XCURSOR_THEME_BASE_SCALE = 1.0f;
 
-void on_new_input(wl_listener* listener, void* data) {
-  // TODO: Implement
-  std::logic_error("Function not yet implemented");
-}
-
-void on_seat_request_cursor(wl_listener* listener, void* data) {
-  // TODO: Implement
-  std::logic_error("Function not yet implemented");
-}
-
-static void on_new_xdg_surface(struct wl_listener *listener, void *data) {
-  /* This event is raised when wlr_xdg_shell receives a new xdg surface from a
-   * client, either a toplevel (application window) or popup. */
-  CMFYServer* server = wl_container_of(listener, server, new_xdg_surface_listener);
-  wlr_xdg_surface* xdg_surface = static_cast<wlr_xdg_surface*>(data);
-  if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
-    return;
-  }
-
-  CMFYView* view = new CMFYView(server, xdg_surface);
-  server->add_view(view);
-  view->bind_events();
-}
-
-void on_new_output(wl_listener* listener, void* data) {
-  CMFYServer* server = wl_container_of(listener, server, new_output_listener);
-  CMFYOutput* output = new CMFYOutput(static_cast<wlr_output*>(data), server);
-
-  auto default_mode_option = output->get_default_mode();
-  if (default_mode_option.has_value()) {
-    output->set_mode(default_mode_option.value());
-  }
-
-  server->add_output(output);
-  output->bind_events();
-}
-
 CMFYServer::CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backend* backend, wlr_renderer* wlroots_renderer, wlr_output_layout* output_layout) :
   wayland_display{display},
   wayland_event_loop{event_loop},
@@ -50,7 +13,7 @@ CMFYServer::CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backe
 {
   // ? Outputs
   wl_list_init(&this->outputs);
-  this->new_output_listener.notify = on_new_output;
+  this->new_output_listener.notify = CMFYServer::on_new_output;
   wl_signal_add(&this->wlroots_backend->events.new_output, &this->new_output_listener);
 
   // ? Views for the shells
@@ -58,7 +21,7 @@ CMFYServer::CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backe
 
   // ? Shells
   this->main_xdg_shell = wlr_xdg_shell_create(this->wayland_display);
-  this->new_xdg_surface_listener.notify = on_new_xdg_surface;
+  this->new_xdg_surface_listener.notify = CMFYServer::on_new_xdg_surface;
   wl_signal_add(&this->main_xdg_shell->events.new_surface, &this->new_xdg_surface_listener);
 
   /* Add a Unix socket to the Wayland display. */
@@ -89,10 +52,10 @@ CMFYServer::CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backe
    * let us know when new input devices are available on the backend.
    */
   wl_list_init(&this->keyboards);
-  this->new_input_listener.notify = on_new_input;
+  this->new_input_listener.notify = CMFYServer::on_new_input;
   wl_signal_add(&this->wlroots_backend->events.new_input, &this->new_input_listener);
   this->seat = wlr_seat_create(this->wayland_display, "seat0");
-  this->request_cursor_listener.notify = on_seat_request_cursor;
+  this->request_cursor_listener.notify = CMFYServer::on_seat_request_cursor;
   wl_signal_add(&this->seat->events.request_set_cursor, &this->request_cursor_listener);
 }
 
@@ -104,6 +67,58 @@ CMFYServer::~CMFYServer() {
   //}
 }
 
+/*
+
+ */
+void CMFYServer::on_new_input(wl_listener* listener, void* data) {
+  // TODO: Implement
+  std::logic_error("Function not yet implemented");
+}
+
+/*
+
+ */
+void CMFYServer::on_seat_request_cursor(wl_listener* listener, void* data) {
+  // TODO: Implement
+  std::logic_error("Function not yet implemented");
+}
+
+/*
+
+ */
+void CMFYServer::on_new_xdg_surface(struct wl_listener *listener, void *data) {
+  /* This event is raised when wlr_xdg_shell receives a new xdg surface from a
+   * client, either a toplevel (application window) or popup. */
+  CMFYServer* server = wl_container_of(listener, server, new_xdg_surface_listener);
+  wlr_xdg_surface* xdg_surface = static_cast<wlr_xdg_surface*>(data);
+  if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
+    return;
+  }
+
+  CMFYView* view = new CMFYView(server, xdg_surface);
+  server->add_view(view);
+  view->bind_events();
+}
+
+/*
+
+ */
+void CMFYServer::on_new_output(wl_listener* listener, void* data) {
+  CMFYServer* server = wl_container_of(listener, server, new_output_listener);
+  CMFYOutput* output = new CMFYOutput(static_cast<wlr_output*>(data), server);
+
+  auto default_mode_option = output->get_default_mode();
+  if (default_mode_option.has_value()) {
+    output->set_mode(default_mode_option.value());
+  }
+
+  server->add_output(output);
+  output->bind_events();
+}
+
+/*
+
+ */
 std::optional<CMFYServer*> CMFYServer::TryCreate() {
   auto wayland_display = wl_display_create();
   if (!wayland_display) return {};
@@ -133,6 +148,9 @@ std::optional<CMFYServer*> CMFYServer::TryCreate() {
   };
 }
 
+/*
+
+ */
 void CMFYServer::start() {
   if (!wlr_backend_start(this->wlroots_backend)) {
     std::cerr << "Failed to start the backend" << std::endl;
@@ -142,14 +160,23 @@ void CMFYServer::start() {
   wl_display_run(this->wayland_display);
 }
 
+/*
+
+ */
 void CMFYServer::add_view(CMFYView* view) {
   wl_list_insert(&this->views, &view->link);
 }
 
+/*
+
+ */
 void CMFYServer::add_output(CMFYOutput* output) {
   wl_list_insert(&this->outputs, &output->link);
 }
 
+/*
+
+ */
 void CMFYServer::set_cursor(CMFYCursor cursor) {
   this->cursor = cursor;
   wlr_cursor_attach_output_layout(cursor.wlroots_cursor, this->wlroots_output_layout);

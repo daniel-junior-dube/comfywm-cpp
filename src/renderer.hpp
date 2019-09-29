@@ -18,11 +18,13 @@ class CMFYView;
 
 using RGBAColor = float[4];
 
-struct RenderData {
-  wlr_output* output;
-  CMFYView* view;
-  wlr_renderer* renderer;
-  timespec* when;
+class RenderOutputTransaction {
+public:
+  CMFYOutput output;
+  timespec start_time;
+  RenderOutputTransaction(CMFYOutput output);
+  ~RenderOutputTransaction();
+  void commit();
 };
 
 class CMFYRenderer {
@@ -33,7 +35,15 @@ public:
   CMFYRenderer(wlr_renderer* wlroots_renderer);
   ~CMFYRenderer();
   void render(int width, int height, std::function<void()> callback);
-  void render_output(CMFYOutput output, std::function<void()> callback);
+  void render_output(CMFYOutput output, std::function<void(RenderOutputTransaction transaction)> callback);
+  void with_output_attached(CMFYOutput output, std::function<void(RenderOutputTransaction transaction)> callback);
   static void draw_surface(wlr_surface *surface, int sx, int sy, void *data);
 private:
+};
+
+struct RenderData {
+  CMFYOutput* output;
+  CMFYView* view;
+  CMFYRenderer* renderer;
+  timespec* when;
 };

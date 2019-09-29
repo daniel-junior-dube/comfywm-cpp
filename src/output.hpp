@@ -16,6 +16,7 @@ extern "C" {
 #include <time.h>
 #include <optional>
 #include <utility>
+#include <functional>
 
 class CMFYServer;
 class CMFYView;
@@ -35,5 +36,7 @@ public:
   std::optional<wlr_output_mode*> get_default_mode();
   std::pair<int, int> get_effective_resolution();
   void set_mode(wlr_output_mode*);
+  std::pair<double, double> get_output_layout_coords();
+  void for_each_views_reverse(std::function<void(CMFYView* view)> callback);
   void bind_events();
 };

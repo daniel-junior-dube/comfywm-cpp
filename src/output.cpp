@@ -2,6 +2,15 @@
 #include "view.hpp"
 #include "server.hpp"
 
+CMFYOutput::CMFYOutput(wlr_output* wlroots_output, CMFYServer* server) :
+  wlroots_output{wlroots_output}, server{server}
+{}
+
+CMFYOutput::~CMFYOutput() {}
+
+/*
+
+ */
 void CMFYOutput::on_output_destroy(wl_listener *listener, void *data) {
   CMFYOutput* output = wl_container_of(listener, output, destroy);
   wl_list_remove(&output->link);
@@ -17,42 +26,36 @@ void CMFYOutput::on_output_destroy(wl_listener *listener, void *data) {
 void CMFYOutput::on_output_frame(wl_listener* listener, void* data) {
   CMFYOutput* output = wl_container_of(listener, output, frame);
   CMFYRenderer renderer = output->server->renderer;
-
-  struct timespec now;
-  clock_gettime(CLOCK_MONOTONIC, &now);
-
-  renderer.render_output(*output, [&]() {
+  renderer.render_output(*output, [&](RenderOutputTransaction transaction) {
     /* Each subsequent window we render is rendered on top of the last. Because
-     * our view list is ordered front-to-back, we iterate over it backwards. */
-    CMFYView* view;
-    wl_list_for_each_reverse(view, &output->server->views, link) {
+     * our view list is ordered front-to-back, we iterate over it backwards.
+     */
+    output->for_each_views_reverse([&](CMFYView* view) {
       if (!view->is_mapped) {
         /* An unmapped view should not be rendered. */
-        continue;
+        return;
       }
       RenderData rdata {
-        .output = output->wlroots_output,
-        .view = view,
-        .renderer = renderer.wlroots_renderer,
-        .when = &now,
+        output,
+        view,
+        &renderer,
+        &transaction.start_time,
       };
-      /* This calls our render_surface function for each surface among the
-      * xdg_surface's toplevel and popups. */
-      wlr_xdg_surface_for_each_surface(view->xdg_surface, CMFYRenderer::draw_surface, &rdata);
-    }
+      view->for_each_surface(CMFYRenderer::draw_surface, &rdata);
+    });
   });
 }
 
-CMFYOutput::CMFYOutput(wlr_output* wlroots_output, CMFYServer* server) :
-  wlroots_output{wlroots_output}, server{server}
-{}
+/*
 
-CMFYOutput::~CMFYOutput() {}
-
+ */
 bool CMFYOutput::has_modes() {
   return !wl_list_empty(&this->wlroots_output->modes);
 }
 
+/*
+
+ */
 std::optional<wlr_output_mode*> CMFYOutput::get_default_mode() {
   if (!this->has_modes()) return {};
   wlr_output_mode* default_output_mode = wl_container_of(
@@ -63,10 +66,16 @@ std::optional<wlr_output_mode*> CMFYOutput::get_default_mode() {
   return { default_output_mode };
 }
 
+/*
+
+ */
 void CMFYOutput::set_mode(wlr_output_mode* mode) {
   wlr_output_set_mode(wlroots_output, mode);
 }
 
+/*
+
+ */
 std::pair<int, int> CMFYOutput::get_effective_resolution() {
   int width, height;
 
@@ -75,12 +84,34 @@ std::pair<int, int> CMFYOutput::get_effective_resolution() {
   return std::make_pair(width, height);
 }
 
+/*
+
+ */
+std::pair<double, double> CMFYOutput::get_output_layout_coords() {
+  double origin_x = 0, origin_y = 0;
+  wlr_output_layout_output_coords(this->server->wlroots_output_layout, this->wlroots_output, &origin_x, &origin_y);
+  return std::make_pair(origin_x, origin_y);
+}
+
+/*
+
+ */
+void CMFYOutput::for_each_views_reverse(std::function<void(CMFYView* view)> callback) {
+  CMFYView* view;
+  wl_list_for_each_reverse(view, &this->server->views, link) {
+    callback(view);
+  }
+}
+
+/*
+
+ */
 void CMFYOutput::bind_events() {
   // ? Binding "On destroy" event handler to output
   this->destroy.notify = CMFYOutput::on_output_destroy;
-  wl_signal_add(&wlroots_output->events.destroy, &this->destroy);
+  wl_signal_add(&this->wlroots_output->events.destroy, &this->destroy);
 
   // ? Binding "On frame" event handler to output
   this->frame.notify = CMFYOutput::on_output_frame;
-  wl_signal_add(&wlroots_output->events.frame, &this->frame);
+  wl_signal_add(&this->wlroots_output->events.frame, &this->frame);
 }
