@@ -7,6 +7,7 @@ RenderOutputTransaction::RenderOutputTransaction(CMFYOutput output) :
 {
   clock_gettime(CLOCK_MONOTONIC, &this->start_time);
 }
+
 RenderOutputTransaction::~RenderOutputTransaction() {}
 
 void RenderOutputTransaction::commit() {
@@ -34,7 +35,7 @@ void CMFYRenderer::render(int width, int height, std::function<void()> callback)
 /*
 
  */
-void CMFYRenderer::render_output(CMFYOutput output, std::function<void(RenderOutputTransaction transaction)> callback) {
+void CMFYRenderer::render_output(CMFYOutput& output, std::function<void(RenderOutputTransaction transaction)> callback) {
   this->with_output_attached(output, [&](RenderOutputTransaction transaction) {
     std::pair<int, int> resolution = output.get_effective_resolution();
     this->render(resolution.first, resolution.second, [&]() {
@@ -46,7 +47,7 @@ void CMFYRenderer::render_output(CMFYOutput output, std::function<void(RenderOut
 /*
 
  */
-void CMFYRenderer::with_output_attached(CMFYOutput output, std::function<void(RenderOutputTransaction transaction)> callback) {
+void CMFYRenderer::with_output_attached(CMFYOutput& output, std::function<void(RenderOutputTransaction transaction)> callback) {
   if (!wlr_output_attach_render(output.wlroots_output, nullptr)) {
 
     // TODO: <EASY> Log that we failed to attach output to render
@@ -81,10 +82,11 @@ void CMFYRenderer::draw_surface(wlr_surface *surface, int sx, int sy, void *data
    * one next to the other, both 1080p, a view on the rightmost display might
    * have layout coordinates of 2000,100. We need to translate that to
    * output-local coordinates, or (2000 - 1920). */
-  double ox = 0, oy = 0;
-  wlr_output_layout_output_coords(view->server->wlroots_output_layout, wlroots_output, &ox, &oy);
-  ox += view->x + sx;
-  oy += view->y + sy;
+  //double ox = 0, oy = 0;
+  std::pair<double, double> output_origin_in_layout = view->server->output_layout.get_output_origin(output);
+  //wlr_output_layout_output_coords(view->server->wlroots_output_layout, wlroots_output, &ox, &oy);
+  double ox = output_origin_in_layout.first + view->x + sx;
+  double oy = output_origin_in_layout.second + view->y + sy;
 
   /* We also have to apply the scale factor for HiDPI outputs. This is only
    * part of the puzzle, TinyWL does not fully support HiDPI. */

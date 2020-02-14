@@ -23,20 +23,16 @@ class CMFYView;
 
 class CMFYOutput {
 public:
-  wl_listener frame;
-  wl_listener destroy;
   wlr_output* wlroots_output;
-  CMFYServer* server;
   wl_list link;
-  CMFYOutput(wlr_output* wlroots_output, CMFYServer* server);
+  CMFYOutput(wlr_output* wlroots_output);
   ~CMFYOutput();
-  static void on_output_destroy(wl_listener *listener, void *data);
-  static void on_output_frame(wl_listener *listener, void *data);
   bool has_modes();
   std::optional<wlr_output_mode*> get_default_mode();
   std::pair<int, int> get_effective_resolution();
   void set_mode(wlr_output_mode*);
-  std::pair<double, double> get_output_layout_coords();
-  void for_each_views_reverse(std::function<void(CMFYView* view)> callback);
-  void bind_events();
+  void for_each_interacting_views_reverse(CMFYServer* server, std::function<void(CMFYView* view)> callback);
+  void bind_events(CMFYServer& server);
+  void unbind_events(CMFYServer& server);
+  //static void on_output_destroy(wl_listener *listener, void *data);
 };

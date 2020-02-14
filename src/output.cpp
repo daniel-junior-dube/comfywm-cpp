@@ -2,49 +2,11 @@
 #include "view.hpp"
 #include "server.hpp"
 
-CMFYOutput::CMFYOutput(wlr_output* wlroots_output, CMFYServer* server) :
-  wlroots_output{wlroots_output}, server{server}
+CMFYOutput::CMFYOutput(wlr_output* wlroots_output) :
+  wlroots_output{wlroots_output}
 {}
 
 CMFYOutput::~CMFYOutput() {}
-
-/*
-
- */
-void CMFYOutput::on_output_destroy(wl_listener *listener, void *data) {
-  CMFYOutput* output = wl_container_of(listener, output, destroy);
-  wl_list_remove(&output->link);
-  wl_list_remove(&output->destroy.link);
-  wl_list_remove(&output->frame.link);
-  free(output);
-}
-
-/*
- * This function is called every time an output is ready to display a frame,
- * generally at the output's refresh rate (e.g. 60Hz).
- */
-void CMFYOutput::on_output_frame(wl_listener* listener, void* data) {
-  CMFYOutput* output = wl_container_of(listener, output, frame);
-  CMFYRenderer renderer = output->server->renderer;
-  renderer.render_output(*output, [&](RenderOutputTransaction transaction) {
-    /* Each subsequent window we render is rendered on top of the last. Because
-     * our view list is ordered front-to-back, we iterate over it backwards.
-     */
-    output->for_each_views_reverse([&](CMFYView* view) {
-      if (!view->is_mapped) {
-        /* An unmapped view should not be rendered. */
-        return;
-      }
-      RenderData rdata {
-        output,
-        view,
-        &renderer,
-        &transaction.start_time,
-      };
-      view->for_each_surface(CMFYRenderer::draw_surface, &rdata);
-    });
-  });
-}
 
 /*
 
@@ -87,18 +49,22 @@ std::pair<int, int> CMFYOutput::get_effective_resolution() {
 /*
 
  */
-std::pair<double, double> CMFYOutput::get_output_layout_coords() {
-  double origin_x = 0, origin_y = 0;
-  wlr_output_layout_output_coords(this->server->wlroots_output_layout, this->wlroots_output, &origin_x, &origin_y);
-  return std::make_pair(origin_x, origin_y);
-}
+// std::pair<double, double> CMFYOutput::get_output_layout_coords() {
+//   return this->server->output_layout.get_output_origin(this->wlroots_output);
+//   //double origin_x = 0, origin_y = 0;
+//   //wlr_output_layout_output_coords(this->server->wlroots_output_layout, this->wlroots_output, &origin_x, &origin_y);
+//   //return std::make_pair(origin_x, origin_y);
+// }
 
 /*
 
  */
-void CMFYOutput::for_each_views_reverse(std::function<void(CMFYView* view)> callback) {
+void CMFYOutput::for_each_interacting_views_reverse(CMFYServer* server, std::function<void(CMFYView* view)> callback) {
   CMFYView* view;
-  wl_list_for_each_reverse(view, &this->server->views, link) {
+  // TODO: Get output bounds
+  wl_list_for_each_reverse(view, &server->views, link) {
+    // TODO: Get view bounds
+    // TODO: Check intersection of view and output 
     callback(view);
   }
 }
@@ -106,12 +72,13 @@ void CMFYOutput::for_each_views_reverse(std::function<void(CMFYView* view)> call
 /*
 
  */
-void CMFYOutput::bind_events() {
-  // ? Binding "On destroy" event handler to output
-  this->destroy.notify = CMFYOutput::on_output_destroy;
-  wl_signal_add(&this->wlroots_output->events.destroy, &this->destroy);
+void CMFYOutput::bind_events(CMFYServer& server) {
+  wl_signal_add(&this->wlroots_output->events.destroy, &server.destroy_output_listener);
+  wl_signal_add(&this->wlroots_output->events.frame, &server.on_output_frame_listener);
+}
 
-  // ? Binding "On frame" event handler to output
-  this->frame.notify = CMFYOutput::on_output_frame;
-  wl_signal_add(&this->wlroots_output->events.frame, &this->frame);
+void CMFYOutput::unbind_events(CMFYServer& server) {
+  wl_list_remove(&this->link);
+  wl_list_remove(&server.destroy_output_listener.link);
+  wl_list_remove(&server.on_output_frame_listener.link);
 }

@@ -35,8 +35,8 @@ public:
   CMFYRenderer(wlr_renderer* wlroots_renderer);
   ~CMFYRenderer();
   void render(int width, int height, std::function<void()> callback);
-  void render_output(CMFYOutput output, std::function<void(RenderOutputTransaction transaction)> callback);
-  void with_output_attached(CMFYOutput output, std::function<void(RenderOutputTransaction transaction)> callback);
+  void render_output(CMFYOutput& output, std::function<void(RenderOutputTransaction transaction)> callback);
+  void with_output_attached(CMFYOutput& output, std::function<void(RenderOutputTransaction transaction)> callback);
   static void draw_surface(wlr_surface *surface, int sx, int sy, void *data);
 private:
 };

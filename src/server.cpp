@@ -1,25 +1,25 @@
 #include "server.hpp"
 
-const char *XCURSOR_THEME_NAME = NULL;
-const uint32_t XCURSOR_THEME_BASE_SIZE = 24;
-const float XCURSOR_THEME_BASE_SCALE = 1.0f;
-
-CMFYServer::CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backend* backend, wlr_renderer* wlroots_renderer, wlr_output_layout* output_layout) :
+CMFYServer::CMFYServer(
+  wl_display* display,
+  wl_event_loop* event_loop,
+  wlr_backend* backend,
+  wlr_renderer* wlroots_renderer,
+  wlr_output_layout* wlroots_output_layout
+) :
   wayland_display{display},
   wayland_event_loop{event_loop},
   wlroots_backend{backend},
   renderer{CMFYRenderer(wlroots_renderer)},
-  wlroots_output_layout{output_layout}
+  output_layout{CMFYOutputLayout(wlroots_output_layout)}
 {
-  // ? Outputs
-  wl_list_init(&this->outputs);
-  this->new_output_listener.notify = CMFYServer::on_new_output;
-  wl_signal_add(&this->wlroots_backend->events.new_output, &this->new_output_listener);
-
-  // ? Views for the shells
+  // Configure shells
+  /* Set up our list of views and the xdg-shell. The xdg-shell is a Wayland
+   * protocol which is used for application windows. For more detail on
+   * shells, refer to my article:
+   * https://drewdevault.com/2018/07/29/Wayland-shells.html
+   */
   wl_list_init(&this->views);
-
-  // ? Shells
   this->main_xdg_shell = wlr_xdg_shell_create(this->wayland_display);
   this->new_xdg_surface_listener.notify = CMFYServer::on_new_xdg_surface;
   wl_signal_add(&this->main_xdg_shell->events.new_surface, &this->new_xdg_surface_listener);
@@ -28,22 +28,18 @@ CMFYServer::CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backe
   this->socket_name = wl_display_add_socket_auto(this->wayland_display);
   std::cout << "Display socket : '" << this->socket_name << "'" << std::endl;
 
+  // Configure outputs
+  this->new_output_listener.notify = CMFYServer::on_new_output;
+  wl_signal_add(&this->wlroots_backend->events.new_output, &this->new_output_listener);
+  this->destroy_output_listener.notify = CMFYServer::on_destroy_output;
+
   /* Set the WAYLAND_DISPLAY environment variable to our socket. */
   setenv("WAYLAND_DISPLAY", this->socket_name, true);
 
-  /*
-   * Creates a cursor, which is a wlroots utility for tracking the cursor
+  /* Creates a cursor, which is a wlroots utility for tracking the cursor
    * image shown on screen.
    */
   this->set_cursor(CMFYCursor());
-
-  /* Creates an xcursor manager, another wlroots utility which loads up
-   * Xcursor themes to source cursor images from and makes sure that cursor
-   * images are available at all scale factors on the screen (necessary for
-   * HiDPI support). */
-  this->wlroots_cursor_mgr = wlr_xcursor_manager_create(XCURSOR_THEME_NAME, XCURSOR_THEME_BASE_SIZE);
-  wlr_xcursor_manager_load(this->wlroots_cursor_mgr, XCURSOR_THEME_BASE_SCALE);
-
 
   /*
    * Configures a seat, which is a single "seat" at which a user sits and
@@ -60,11 +56,11 @@ CMFYServer::CMFYServer(wl_display* display, wl_event_loop* event_loop, wlr_backe
 }
 
 CMFYServer::~CMFYServer() {
-  // TOFIX: This causes and segfault..
-  //if (this->wayland_display) {
-  //  wl_display_destroy_clients(this->wayland_display);
-  //  wl_display_destroy(this->wayland_display);
-  //}
+  if (this->wayland_display) {
+    wlr_backend_destroy(this->wlroots_backend);
+    //wl_display_destroy_clients(this->wayland_display);
+    wl_display_destroy(this->wayland_display);
+  }
 }
 
 /*
@@ -103,23 +99,7 @@ void CMFYServer::on_new_xdg_surface(struct wl_listener *listener, void *data) {
 /*
 
  */
-void CMFYServer::on_new_output(wl_listener* listener, void* data) {
-  CMFYServer* server = wl_container_of(listener, server, new_output_listener);
-  CMFYOutput* output = new CMFYOutput(static_cast<wlr_output*>(data), server);
-
-  auto default_mode_option = output->get_default_mode();
-  if (default_mode_option.has_value()) {
-    output->set_mode(default_mode_option.value());
-  }
-
-  server->add_output(output);
-  output->bind_events();
-}
-
-/*
-
- */
-std::optional<CMFYServer*> CMFYServer::TryCreate() {
+std::optional<CMFYServer*> CMFYServer::TryNew() {
   auto wayland_display = wl_display_create();
   if (!wayland_display) return {};
 
@@ -141,6 +121,8 @@ std::optional<CMFYServer*> CMFYServer::TryCreate() {
   wlr_compositor_create(wayland_display, wlroots_renderer);
   wlr_data_device_manager_create(wayland_display);
 
+  /* Creates an output layout, which a wlroots utility for working with an
+	 * arrangement of screens in a physical layout. */
   auto wlroots_output_layout = wlr_output_layout_create();
 
   return {
@@ -170,16 +152,9 @@ void CMFYServer::add_view(CMFYView* view) {
 /*
 
  */
-void CMFYServer::add_output(CMFYOutput* output) {
-  wl_list_insert(&this->outputs, &output->link);
-}
-
-/*
-
- */
 void CMFYServer::set_cursor(CMFYCursor cursor) {
   this->cursor = cursor;
-  wlr_cursor_attach_output_layout(cursor.wlroots_cursor, this->wlroots_output_layout);
+  this->cursor.attach_output_layout(&this->output_layout);
 
   /*
    * wlr_cursor *only* displays an image on screen. It does not move around
@@ -203,4 +178,59 @@ void CMFYServer::set_cursor(CMFYCursor cursor) {
   //wl_signal_add(&this->cursor->events.axis, &this->cursor_axis);
   //this->cursor_frame.notify = server_cursor_frame;
   //wl_signal_add(&this->cursor->events.frame, &this->cursor_frame);
+}
+
+/*
+
+ */
+void CMFYServer::on_new_output(wl_listener* listener, void* data) {
+  CMFYServer* server = wl_container_of(listener, server, new_output_listener);
+  CMFYOutput* output = new CMFYOutput(static_cast<wlr_output*>(data));
+  auto default_mode_option = output->get_default_mode();
+  if (default_mode_option.has_value()) {
+    output->set_mode(default_mode_option.value());
+  }
+  server->output_layout.add_output(output);
+  server->on_output_frame_listener.notify = CMFYServer::on_output_frame;
+  output->bind_events(*server);
+}
+
+/*
+
+ */
+void CMFYServer::on_destroy_output(wl_listener* listener, void* data) {
+  CMFYServer* server = wl_container_of(listener, server, new_output_listener);
+  wlr_output* wlroots_output = static_cast<wlr_output*>(data);
+  CMFYOutput output = CMFYOutput(wlroots_output);
+  output.unbind_events(*server);
+  server->output_layout.remove_output(output);
+  free(wlroots_output);
+}
+
+/*
+ * This function is called every time an output is ready to display a frame,
+ * generally at the output's refresh rate (e.g. 60Hz).
+ */
+void CMFYServer::on_output_frame(wl_listener* listener, void* data) {
+  CMFYServer* server = wl_container_of(listener, server, on_output_frame_listener);
+  CMFYOutput output = CMFYOutput(static_cast<wlr_output*>(data));
+  CMFYRenderer renderer = server->renderer;
+  renderer.render_output(output, [&](RenderOutputTransaction transaction) {
+    /* Each subsequent window we render is rendered on top of the last. Because
+     * our view list is ordered front-to-back, we iterate over it backwards.
+     */
+    output.for_each_interacting_views_reverse(server, [&](CMFYView* view) {
+      if (!view->is_mapped) {
+        /* An unmapped view should not be rendered. */
+        return;
+      }
+      RenderData rdata {
+        &output,
+        view,
+        &renderer,
+        &transaction.start_time,
+      };
+      view->for_each_surface(CMFYRenderer::draw_surface, &rdata);
+    });
+  });
 }

@@ -3,6 +3,7 @@ comfywm_sources = files(
   'server.cpp',
   'renderer.cpp',
   'output.cpp',
+  'output_layout.cpp',
   'view.cpp',
   'cursor.cpp',
 )
