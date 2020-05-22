@@ -18,8 +18,13 @@ What things you need to install the software and how to install them.
 * [Meson](https://mesonbuild.com/) - Meson is an open source build system meant to be both extremely fast, and, even more importantly, as user friendly as possible.
 * [Ninja](https://ninja-build.org/) - Ninja is a small build system with a focus on speed.
 
+
+**IMPORTANT NOTE :**
+Wlroots seems to compile without problem by itself. Through comfy, multiple warnings appear while compiling wlroots as a subproject. Since it uses the `werror=true` flag. The build is stopped.
+To fix this, add `-Wno-error` to wlroots `meson.build` file, under `add_project_arguments(cc.get_supported_arguments([`.
+
 ```
-TODO: Give examples
+
 ```
 
 ### Building
